@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EGK Aerodynamic Division — UAV Technical Documents</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#03060a;
+  --deep:#060c14;
+  --panel:#08111e;
+  --card:#0b1828;
+  --gold:#d4920a;
+  --gold2:#f0b020;
+  --amber:#ff8c00;
+  --cyan:#00c8e0;
+  --green:#00e87a;
+  --red:#ff3a5c;
+  --silver:#8aa8c0;
+  --border:rgba(212,146,10,0.18);
+  --bordercool:rgba(0,200,224,0.18);
+  --text:#ddeaf8;
+  --dim:#4a6a88;
+  --glow-gold:0 0 24px rgba(212,146,10,.45),0 0 60px rgba(212,146,10,.12);
+  --glow-cyan:0 0 20px rgba(0,200,224,.4),0 0 50px rgba(0,200,224,.1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--void);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+
+/* ── Noise texture overlay ── */
+body::before{
+  content:'';position:fixed;inset:0;opacity:.028;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9000;
+}
+
+/* ── Scan lines ── */
+body::after{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);
+  pointer-events:none;z-index:8999;
+}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 48px;height:64px;
+  background:rgba(3,6,10,.88);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  animation:glow-scan 5s ease-in-out infinite;}
+@keyframes glow-scan{0%,100%{opacity:.4}50%{opacity:1}}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none;}
+.nav-logo img{width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(212,146,10,.6));}
+.nav-logotext{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;letter-spacing:3px;color:#fff;}
+.nav-logosub{font-family:'Space Mono',monospace;font-size:8px;color:var(--gold);letter-spacing:2px;margin-top:1px;}
+.nav-links{display:flex;align-items:center;gap:8px;}
+.nav-links a{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);text-decoration:none;padding:7px 14px;text-transform:uppercase;transition:color .2s;}
+.nav-links a:hover{color:var(--gold);}
+.nav-buy{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--void)!important;background:var(--gold);padding:9px 22px!important;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:all .2s!important;}
+.nav-buy:hover{background:var(--gold2)!important;box-shadow:var(--glow-gold)!important;color:var(--void)!important;}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  position:relative;overflow:hidden;padding:100px 48px 80px;
+  background:radial-gradient(ellipse at 50% 30%,#0d1c30 0%,#03060a 65%);
+}
+/* Animated grid */
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(212,146,10,.04) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(212,146,10,.04) 1px,transparent 1px);
+  background-size:56px 56px;
+  animation:grid-drift 25s linear infinite;
+}
+@keyframes grid-drift{0%{background-position:0 0}100%{background-position:0 56px}}
+/* Corner bracket decorations */
+.hero-corner{position:absolute;width:80px;height:80px;}
+.hero-corner.tl{top:80px;left:48px;border-top:2px solid var(--gold);border-left:2px solid var(--gold);}
+.hero-corner.tr{top:80px;right:48px;border-top:2px solid var(--gold);border-right:2px solid var(--gold);}
+.hero-corner.bl{bottom:60px;left:48px;border-bottom:2px solid rgba(212,146,10,.4);border-left:2px solid rgba(212,146,10,.4);}
+.hero-corner.br{bottom:60px;right:48px;border-bottom:2px solid rgba(212,146,10,.4);border-right:2px solid rgba(212,146,10,.4);}
+/* Radar sweep */
+.radar-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);width:700px;height:700px;opacity:.04;pointer-events:none;}
+.radar-wrap svg{width:100%;height:100%;}
+
+.hero-eyebrow{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:4px;color:var(--gold);
+  display:flex;align-items:center;gap:12px;margin-bottom:24px;animation:fadein .8s ease both;}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';flex:1;max-width:60px;height:1px;background:var(--gold);}
+@keyframes fadein{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+.hero-title{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:clamp(36px,5.5vw,72px);line-height:1.0;letter-spacing:-1px;
+  text-align:center;color:#fff;
+  animation:fadein .9s ease .1s both;
+}
+.hero-title .hi{color:var(--gold);text-shadow:var(--glow-gold);}
+.hero-title .dim{color:var(--silver);font-weight:400;}
+
+.hero-sub{
+  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--cyan);margin-top:16px;text-align:center;
+  animation:fadein .9s ease .2s both;
+}
+.hero-desc{
+  max-width:620px;text-align:center;font-size:16px;color:var(--silver);line-height:1.75;
+  margin-top:20px;animation:fadein .9s ease .3s both;
+}
+
+/* Agree box */
+.hero-agree{
+  margin-top:28px;padding:14px 28px;
+  background:rgba(0,200,224,.06);border:1px solid var(--bordercool);
+  font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan);
+  text-align:center;animation:fadein .9s ease .4s both;
+  position:relative;
+}
+.hero-agree::before{content:'◈';margin-right:10px;color:var(--green);}
+
+.hero-ctas{display:flex;gap:14px;margin-top:36px;flex-wrap:wrap;justify-content:center;animation:fadein .9s ease .5s both;}
+.cta-primary{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:12px;letter-spacing:3px;
+  color:var(--void);background:var(--gold);padding:16px 36px;text-decoration:none;
+  clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+  transition:all .2s;text-transform:uppercase;
+}
+.cta-primary:hover{background:var(--gold2);box-shadow:var(--glow-gold);transform:translateY(-2px);}
+.cta-ghost{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:12px;letter-spacing:3px;
+  color:var(--gold);background:transparent;padding:15px 36px;text-decoration:none;
+  border:1px solid var(--gold);
+  clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+  transition:all .2s;text-transform:uppercase;
+}
+.cta-ghost:hover{background:rgba(212,146,10,.08);transform:translateY(-2px);}
+
+/* Stats row */
+.hero-stats{
+  display:flex;gap:48px;margin-top:56px;padding-top:32px;
+  border-top:1px solid var(--border);
+  animation:fadein .9s ease .6s both;flex-wrap:wrap;justify-content:center;
+}
+.hstat{text-align:center;}
+.hstat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:34px;color:var(--gold);line-height:1;display:block;}
+.hstat-key{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);margin-top:4px;}
+
+/* ── SECTION BASE ── */
+.section{padding:90px 48px;position:relative;z-index:2;}
+.s-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.s-label::before{content:'';width:24px;height:1px;background:var(--gold);}
+.s-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(26px,3.5vw,44px);color:#fff;line-height:1.1;margin-bottom:10px;}
+.s-title .hi{color:var(--gold);}
+.s-sub{font-size:15px;color:var(--silver);line-height:1.7;max-width:580px;margin-bottom:52px;}
+.container{max-width:1200px;margin:0 auto;}
+
+/* ── STRATEGY SECTION ── */
+.strategy-bg{background:linear-gradient(180deg,var(--void),var(--deep));}
+.strategy-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;}
+.strategy-card{
+  background:var(--panel);padding:40px 36px;position:relative;overflow:hidden;
+  border-bottom:2px solid transparent;transition:all .3s;
+}
+.strategy-card::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .3s;}
+.strategy-card:hover::before{transform:scaleX(1);}
+.strategy-card:hover{background:var(--card);}
+.strat-icon{font-size:28px;margin-bottom:16px;}
+.strat-num{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:3px;margin-bottom:12px;}
+.strat-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:#fff;margin-bottom:10px;}
+.strat-desc{font-size:14px;color:var(--silver);line-height:1.7;}
+.strat-badge{
+  display:inline-block;margin-top:14px;font-family:'Space Mono',monospace;font-size:9px;
+  letter-spacing:2px;padding:4px 12px;border:1px solid var(--border);color:var(--gold);
+}
+
+/* ── TIER PRICING SECTION ── */
+.pricing-section{background:var(--void);border-top:1px solid var(--border);}
+.tiers-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;}
+.tier-card{
+  background:var(--panel);border:1px solid var(--border);
+  position:relative;overflow:hidden;
+  transition:all .3s;display:flex;flex-direction:column;
+}
+.tier-card:hover{border-color:var(--gold);box-shadow:var(--glow-gold);transform:translateY(-4px);}
+.tier-card.featured{border-color:var(--gold);box-shadow:var(--glow-gold);}
+.tier-card.featured::before{content:'★ MOST POPULAR';position:absolute;top:0;left:0;right:0;
+  background:var(--gold);color:var(--void);font-family:'Space Mono',monospace;font-size:9px;
+  letter-spacing:3px;padding:6px;text-align:center;font-weight:700;}
+.tier-glow-line{position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.tier-head{padding:28px 24px 20px;border-bottom:1px solid var(--border);}
+.tier-head.featured-pad{padding-top:44px;}
+.tier-badge{
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;
+  color:var(--gold);margin-bottom:10px;display:block;
+}
+.tier-name{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;letter-spacing:2px;}
+.tier-tagline{font-size:12px;color:var(--silver);margin-top:4px;line-height:1.5;}
+.tier-price{padding:20px 24px;border-bottom:1px solid var(--border);}
+.price-amount{font-family:'Syne',sans-serif;font-weight:800;font-size:42px;color:var(--gold);line-height:1;}
+.price-currency{font-size:18px;vertical-align:top;margin-top:8px;display:inline-block;}
+.price-per{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:2px;margin-top:4px;}
+.tier-items{padding:20px 24px;flex:1;}
+.tier-section-label{
+  font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--gold);
+  text-transform:uppercase;margin:14px 0 8px;display:flex;align-items:center;gap:8px;
+}
+.tier-section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.tier-item{
+  display:flex;align-items:flex-start;gap:8px;padding:6px 0;
+  font-size:12px;color:var(--silver);line-height:1.4;
+  border-bottom:1px solid rgba(212,146,10,.06);
+}
+.tier-item:last-child{border-bottom:none;}
+.tier-check{color:var(--green);flex-shrink:0;font-size:11px;margin-top:1px;}
+.tier-item.locked{color:var(--dim);}
+.tier-item.locked .tier-check{color:var(--dim);}
+.tier-foot{padding:20px 24px;border-top:1px solid var(--border);}
+.tier-btn{
+  display:block;width:100%;text-align:center;font-family:'Syne',sans-serif;font-weight:700;
+  font-size:11px;letter-spacing:3px;text-decoration:none;padding:14px;
+  text-transform:uppercase;transition:all .2s;cursor:pointer;border:none;
+}
+.tier-btn-gold{background:var(--gold);color:var(--void);clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+.tier-btn-gold:hover{background:var(--gold2);box-shadow:var(--glow-gold);}
+.tier-btn-outline{background:transparent;color:var(--gold);border:1px solid var(--border);clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+.tier-btn-outline:hover{border-color:var(--gold);background:rgba(212,146,10,.06);}
+.tier-savings{font-family:'Space Mono',monospace;font-size:9px;color:var(--green);text-align:center;margin-top:8px;letter-spacing:1px;}
+
+/* ── CONTENT DETAILS ── */
+.content-section{background:var(--deep);}
+.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;}
+.content-module{
+  background:var(--panel);padding:32px 28px;
+  border-left:2px solid transparent;transition:all .3s;
+}
+.content-module:hover{border-left-color:var(--gold);background:var(--card);}
+.cm-num{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:10px;}
+.cm-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#fff;margin-bottom:8px;}
+.cm-tier{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;
+  padding:3px 10px;border:1px solid;display:inline-block;margin-bottom:12px;}
+.cm-tier.alpha{color:var(--cyan);border-color:var(--cyan);background:rgba(0,200,224,.06);}
+.cm-tier.beta{color:var(--gold);border-color:var(--gold);background:rgba(212,146,10,.06);}
+.cm-tier.delta{color:var(--amber);border-color:var(--amber);background:rgba(255,140,0,.06);}
+.cm-tier.sigma{color:var(--green);border-color:var(--green);background:rgba(0,232,122,.06);}
+.cm-params{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.cm-params li{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;
+  padding:4px 10px;background:rgba(212,146,10,.05);border:1px solid var(--border);color:var(--silver);}
+.cm-desc{font-size:13px;color:var(--silver);line-height:1.7;margin-top:10px;}
+
+/* ── WHY SEPARATE SITE ── */
+.why-section{background:var(--void);}
+.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;}
+.why-card{background:var(--panel);padding:36px 28px;position:relative;overflow:hidden;transition:all .3s;}
+.why-card::after{content:'';position:absolute;bottom:0;left:0;width:0;height:2px;background:var(--gold);transition:width .3s;}
+.why-card:hover::after{width:100%;}
+.why-card:hover{background:var(--card);}
+.why-icon{font-size:32px;margin-bottom:16px;}
+.why-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#fff;margin-bottom:8px;}
+.why-desc{font-size:13px;color:var(--silver);line-height:1.7;}
+
+/* ── SAMPLE / PREVIEW ── */
+.sample-section{background:var(--deep);border-top:1px solid var(--border);}
+.sample-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;}
+.sample-card{
+  background:var(--panel);padding:0;overflow:hidden;
+  border:1px solid var(--border);transition:border-color .3s;
+}
+.sample-card:hover{border-color:var(--gold);}
+.sample-head{padding:18px 20px;border-bottom:1px solid var(--border);background:#040810;
+  display:flex;align-items:center;gap:10px;}
+.sample-head-dot{width:7px;height:7px;border-radius:50%;}
+.sample-filename{font-family:'Space Mono',monospace;font-size:9px;color:var(--silver);letter-spacing:1px;}
+.sample-body{padding:20px;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);line-height:1.8;}
+.sample-body .token-key{color:var(--cyan);}
+.sample-body .token-val{color:var(--gold);}
+.sample-body .token-com{color:var(--dim);font-style:italic;}
+.sample-body .token-unit{color:var(--green);}
+.sample-body .token-warn{color:var(--amber);}
+.sample-locked{
+  padding:24px;text-align:center;background:rgba(0,0,0,.4);
+  border-top:1px solid var(--border);
+}
+.sample-locked p{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:12px;}
+
+/* ── PROCESS ── */
+.process-section{background:var(--void);}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;}
+.process-steps::before{content:'';position:absolute;top:28px;left:calc(12.5%);right:calc(12.5%);height:1px;background:linear-gradient(90deg,var(--gold),rgba(212,146,10,.2));}
+.ps{text-align:center;padding:0 20px;}
+.ps-num{
+  width:56px;height:56px;border-radius:50%;background:var(--panel);
+  border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--gold);
+  position:relative;z-index:1;
+}
+.ps-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;}
+.ps-desc{font-size:12px;color:var(--silver);line-height:1.6;}
+
+/* ── FAQ ── */
+.faq-section{background:var(--deep);}
+.faq-item{border-bottom:1px solid var(--border);}
+.faq-q{
+  width:100%;background:transparent;border:none;text-align:left;padding:20px 0;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#fff;
+  display:flex;justify-content:space-between;align-items:center;cursor:pointer;
+  transition:color .2s;
+}
+.faq-q:hover{color:var(--gold);}
+.faq-q .arrow{color:var(--gold);font-size:18px;transition:transform .3s;}
+.faq-q.open .arrow{transform:rotate(45deg);}
+.faq-a{display:none;padding:0 0 20px;font-size:14px;color:var(--silver);line-height:1.7;}
+.faq-a.open{display:block;}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--panel);border-top:1px solid var(--border);padding:56px 48px 36px;
+  position:relative;
+}
+footer::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),var(--cyan),var(--gold),transparent);}
+.footer-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr;gap:60px;padding-bottom:40px;border-bottom:1px solid var(--border);margin-bottom:32px;}
+.footer-logo{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.footer-logo img{width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(212,146,10,.5));}
+.footer-desc{font-size:13px;color:var(--dim);line-height:1.7;}
+.footer-col h4{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--gold);margin-bottom:16px;}
+.footer-col a,.footer-col p{font-size:13px;color:var(--dim);text-decoration:none;display:block;margin-bottom:9px;transition:color .2s;}
+.footer-col a:hover{color:var(--gold);}
+.footer-bottom{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.footer-copy{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:1px;}
+.footer-stripe{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:1px;display:flex;align-items:center;gap:6px;}
+.stripe-badge{background:#635bff;color:#fff;padding:2px 8px;font-size:8px;letter-spacing:1px;border-radius:2px;}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(3,6,10,.95);z-index:2000;backdrop-filter:blur(10px);align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--border);max-width:540px;width:92%;position:relative;}
+.modal-box::before{content:'';position:absolute;top:-1px;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--cyan),var(--gold));}
+.modal-head{padding:22px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.modal-head h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:1px;}
+.modal-close{background:none;border:1px solid var(--border);color:var(--silver);width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+.modal-body{padding:24px;}
+.modal-tier-badge{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--gold);padding:5px 14px;border:1px solid var(--gold);background:rgba(212,146,10,.06);display:inline-block;margin-bottom:16px;}
+.modal-price{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--gold);line-height:1;margin-bottom:4px;}
+.modal-includes{margin-top:16px;margin-bottom:24px;}
+.modal-includes li{font-size:13px;color:var(--silver);padding:6px 0;border-bottom:1px solid rgba(212,146,10,.08);display:flex;align-items:center;gap:8px;list-style:none;}
+.modal-includes li::before{content:'✓';color:var(--green);flex-shrink:0;font-size:11px;}
+.stripe-btn{
+  display:block;width:100%;text-align:center;padding:16px;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:3px;
+  text-transform:uppercase;text-decoration:none;transition:all .2s;cursor:pointer;border:none;
+}
+.stripe-btn-main{background:var(--gold);color:var(--void);clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+.stripe-btn-main:hover{background:var(--gold2);box-shadow:var(--glow-gold);}
+.modal-note{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);text-align:center;margin-top:12px;letter-spacing:1px;line-height:1.6;}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease;}
+.reveal.visible{opacity:1;transform:none;}
+
+@media(max-width:900px){
+  nav{padding:0 20px;}
+  .nav-links{display:none;}
+  .section{padding:70px 20px;}
+  .tiers-grid{grid-template-columns:1fr 1fr;}
+  .content-grid{grid-template-columns:1fr;}
+  .strategy-grid,.why-grid,.sample-grid{grid-template-columns:1fr;}
+  .process-steps{grid-template-columns:1fr 1fr;}
+  .process-steps::before{display:none;}
+  .footer-inner{grid-template-columns:1fr;}
+  .hero-corner{display:none;}
+}
+@media(max-width:600px){
+  .tiers-grid{grid-template-columns:1fr;}
+  .hero-stats{gap:20px;}
+  .hero-title{font-size:32px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <img src="https://egkhor.com.my/home/wp-content/uploads/2026/02/cropped-IMG_7598.png" alt="EGK" onerror="this.style.display='none'">
+    <div>
+      <div class="nav-logotext">EGK AERO</div>
+      <div class="nav-logosub">AERODYNAMIC DIVISION</div>
+    </div>
+  </a>
+  <div class="nav-links">
+    <a href="#why">Why This</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#content">Contents</a>
+    <a href="#process">Process</a>
+    <a href="#faq">FAQ</a>
+    <a href="#pricing" class="nav-buy">Buy Now</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-corner tl"></div>
+  <div class="hero-corner tr"></div>
+  <div class="hero-corner bl"></div>
+  <div class="hero-corner br"></div>
+  <div class="radar-wrap">
+    <svg viewBox="0 0 400 400">
+      <circle cx="200" cy="200" r="190" fill="none" stroke="currentColor" stroke-width="1" opacity=".6"/>
+      <circle cx="200" cy="200" r="140" fill="none" stroke="currentColor" stroke-width=".7" opacity=".5"/>
+      <circle cx="200" cy="200" r="90" fill="none" stroke="currentColor" stroke-width=".6" opacity=".4"/>
+      <circle cx="200" cy="200" r="45" fill="none" stroke="currentColor" stroke-width=".5" opacity=".3"/>
+      <line x1="200" y1="10" x2="200" y2="390" stroke="currentColor" stroke-width=".5" opacity=".3"/>
+      <line x1="10" y1="200" x2="390" y2="200" stroke="currentColor" stroke-width=".5" opacity=".3"/>
+      <line x1="55" y1="55" x2="345" y2="345" stroke="currentColor" stroke-width=".4" opacity=".2"/>
+      <line x1="345" y1="55" x2="55" y2="345" stroke="currentColor" stroke-width=".4" opacity=".2"/>
+    </svg>
+  </div>
+
+  <div class="hero-eyebrow">EGK AERODYNAMIC DIVISION · UAV TECHNICAL DOCUMENTS</div>
+
+  <h1 class="hero-title">
+    PRECISION <span class="hi">AEROSPACE</span><br>
+    ENGINEERING DATA<br>
+    <span class="dim">FOR SALE</span>
+  </h1>
+  <div class="hero-sub">2000 KM · MALAYSIA-ENGINEERED · TWO PLATFORM CONFIGURATIONS</div>
+  <div class="hero-desc">
+    Purchase validated UAV engineering data — from preliminary aerodynamic analysis to complete flight control system architecture. Tiered access. Instant delivery. Backed by EGK Microelectronics Solutions Group Sdn. Bhd.
+  </div>
+
+  <div class="hero-agree">
+    STRATEGY: This site sells content. egkhor.com.my builds brand. Two sites — one purpose: revenue.
+  </div>
+
+  <div class="hero-ctas">
+    <a href="#pricing" class="cta-primary">▸ View Pricing Tiers</a>
+    <a href="#content" class="cta-ghost">Explore Contents</a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="hstat"><span class="hstat-val">4</span><div class="hstat-key">DOCUMENT TIERS</div></div>
+    <div class="hstat"><span class="hstat-val">2</span><div class="hstat-key">UAV PLATFORMS</div></div>
+    <div class="hstat"><span class="hstat-val">18+</span><div class="hstat-key">TECHNICAL PARAMETERS</div></div>
+    <div class="hstat"><span class="hstat-val">USD $49</span><div class="hstat-key">ENTRY PRICE</div></div>
+  </div>
+</div>
+
+<!-- WHY TWO SITES -->
+<div class="section why-section" id="why">
+  <div class="container">
+    <div class="s-label">STRATEGY</div>
+    <h2 class="s-title">Why a <span class="hi">Dedicated</span> Sales Site?</h2>
+    <p class="s-sub">The official EGK site drives awareness. This site drives revenue. Separation keeps the brand clean and the checkout funnel frictionless.</p>
+    <div class="why-grid reveal">
+      <div class="why-card">
+        <div class="why-icon">🏢</div>
+        <div class="why-title">egkhor.com.my — Brand Site</div>
+        <div class="why-desc">Showcases EGK's full portfolio, IP, partnerships, apps, books, and semiconductor hardware. Builds trust and credibility. Drives inbound. No paywall friction.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">💰</div>
+        <div class="why-title">This Site — Revenue Engine</div>
+        <div class="why-desc">Single focused purpose: convert visitors into buyers. No distractions. Clean checkout via Stripe. Buyers get instant document delivery. Pure commercial.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">✈️</div>
+        <div class="why-title">UAV Data as a Product</div>
+        <div class="why-desc">Aerospace engineering data is globally scarce and expensive. EGK Aerodynamic Division packages validated UAV design data into purchasable tiers — accessible to researchers, startups, and defence primes worldwide.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STRATEGY DETAIL -->
+<div class="section strategy-bg" id="strategy">
+  <div class="container">
+    <div class="s-label">BUSINESS MODEL</div>
+    <h2 class="s-title">Two Sites, <span class="hi">One Ecosystem</span></h2>
+    <p class="s-sub">Each site is independently optimised — together they form a complete customer journey from awareness to purchase.</p>
+    <div class="strategy-grid reveal">
+      <div class="strategy-card">
+        <div class="strat-num">SITE 01</div>
+        <div class="strat-icon">🌐</div>
+        <div class="strat-title">EGK Official — Awareness &amp; Trust</div>
+        <div class="strat-desc">Shows the world what EGK does: semiconductor precision parts, AI software, AR education, MOE recognition, Fortune 500 clients. It says "we are serious." Visitors arrive here first. No transaction pressure.</div>
+        <span class="strat-badge">egkhor.com.my</span>
+      </div>
+      <div class="strategy-card">
+        <div class="strat-num">SITE 02</div>
+        <div class="strat-icon">🚀</div>
+        <div class="strat-title">EGK Aero Docs — Commerce &amp; Conversion</div>
+        <div class="strat-desc">Designed exclusively to sell. Every element — headline, tier comparison, sample data preview, Stripe checkout — is optimised for one outcome: a completed purchase. Linked from the main site UAV section.</div>
+        <span class="strat-badge">This Site</span>
+      </div>
+      <div class="strategy-card">
+        <div class="strat-num">CHANNEL 01</div>
+        <div class="strat-icon">📣</div>
+        <div class="strat-title">Traffic Sources</div>
+        <div class="strat-desc">LinkedIn (defence/aerospace audience), ResearchGate (academia), direct outreach to Malaysian STRIDE, DEFTECH, UTM Aerospace, and ASEAN UAV startups. egkhor.com.my UAV section links here with "Buy Engineering Data" CTA.</div>
+        <span class="strat-badge">Inbound + Outbound</span>
+      </div>
+      <div class="strategy-card">
+        <div class="strat-num">CHANNEL 02</div>
+        <div class="strat-icon">📦</div>
+        <div class="strat-title">Delivery Model</div>
+        <div class="strat-desc">Stripe handles payment. On success, buyer receives a download link via email (or Stripe webhook to a Google Drive folder). No inventory. No shipping. 100% digital. Margin: ~95%.</div>
+        <span class="strat-badge">Instant Digital Delivery</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ PRICING TIERS ══════════════════════ -->
+<div class="section pricing-section" id="pricing">
+  <div class="container">
+    <div class="s-label">PRICING</div>
+    <h2 class="s-title">Choose Your <span class="hi">Access Tier</span></h2>
+    <p class="s-sub">Each tier builds on the previous. All documents cover both UAV-LRS-2000 (Turboprop) and UAV-PSH-001 (Pusher) platforms unless noted.</p>
+
+    <div class="tiers-grid reveal">
+
+      <!-- ALPHA -->
+      <div class="tier-card">
+        <div class="tier-glow-line"></div>
+        <div class="tier-head">
+          <span class="tier-badge">TIER 01 · ALPHA</span>
+          <div class="tier-name">ALPHA</div>
+          <div class="tier-tagline">Preliminary Aerodynamic Analysis — entry point for researchers and students</div>
+        </div>
+        <div class="tier-price">
+          <div class="price-amount"><span class="price-currency">$</span>49</div>
+          <div class="price-per">USD · ONE-TIME · INSTANT DELIVERY</div>
+        </div>
+        <div class="tier-items">
+          <div class="tier-section-label">AERO ANALYSIS</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Wing Loading Analysis (W/S)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Lift Curve (CL vs α)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Drag Estimate (parasite + induced)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Power Required vs Speed Chart</div>
+          <div class="tier-section-label">DELIVERABLES</div>
+          <div class="tier-item"><span class="tier-check">✓</span>PDF Report (both platforms)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Summary Data Tables</div>
+          <div class="tier-item locked"><span class="tier-check">—</span>Research Paper (Beta+)</div>
+          <div class="tier-item locked"><span class="tier-check">—</span>Aero Coefficients (Delta+)</div>
+          <div class="tier-item locked"><span class="tier-check">—</span>FCS Architecture (Sigma)</div>
+        </div>
+        <div class="tier-foot">
+          <button class="tier-btn tier-btn-outline" onclick="openModal('alpha')">▸ Buy ALPHA — $49</button>
+        </div>
+      </div>
+
+      <!-- BETA -->
+      <div class="tier-card">
+        <div class="tier-glow-line"></div>
+        <div class="tier-head">
+          <span class="tier-badge">TIER 02 · BETA</span>
+          <div class="tier-name">BETA</div>
+          <div class="tier-tagline">Validated design + research-grade documentation for professionals</div>
+        </div>
+        <div class="tier-price">
+          <div class="price-amount"><span class="price-currency">$</span>149</div>
+          <div class="price-per">USD · ONE-TIME · INSTANT DELIVERY</div>
+        </div>
+        <div class="tier-items">
+          <div class="tier-section-label">INCLUDES ALPHA PLUS</div>
+          <div class="tier-item"><span class="tier-check">✓</span>All ALPHA deliverables</div>
+          <div class="tier-section-label">RESEARCH & VALIDATION</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Aerospace Research Paper</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Flight-Validated Design Basis</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Prototype Specification Sheet</div>
+          <div class="tier-section-label">DELIVERABLES</div>
+          <div class="tier-item"><span class="tier-check">✓</span>All PDF + DOCX formats</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Reference drawings (both UAVs)</div>
+          <div class="tier-item locked"><span class="tier-check">—</span>Aero Coefficients (Delta+)</div>
+          <div class="tier-item locked"><span class="tier-check">—</span>FCS Architecture (Sigma)</div>
+        </div>
+        <div class="tier-foot">
+          <button class="tier-btn tier-btn-outline" onclick="openModal('beta')">▸ Buy BETA — $149</button>
+          <div class="tier-savings">✦ Saves $49 vs buying separately</div>
+        </div>
+      </div>
+
+      <!-- DELTA — FEATURED -->
+      <div class="tier-card featured">
+        <div class="tier-glow-line"></div>
+        <div class="tier-head featured-pad">
+          <span class="tier-badge">TIER 03 · DELTA</span>
+          <div class="tier-name">DELTA</div>
+          <div class="tier-tagline">Full aerodynamic coefficient dataset — industry & startup grade</div>
+        </div>
+        <div class="tier-price">
+          <div class="price-amount"><span class="price-currency">$</span>349</div>
+          <div class="price-per">USD · ONE-TIME · INSTANT DELIVERY</div>
+        </div>
+        <div class="tier-items">
+          <div class="tier-section-label">INCLUDES BETA PLUS</div>
+          <div class="tier-item"><span class="tier-check">✓</span>All ALPHA + BETA deliverables</div>
+          <div class="tier-section-label">FULL AERO COEFFICIENTS</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Lift Coefficient (CL) dataset</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Drag Polar (CD vs CL²)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Wing Loading (refined W/S)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Reynolds Number Analysis</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Propulsive Efficiency (η)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Cruise Speed Optimisation</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Fuel Burn Rate (per km + per hr)</div>
+          <div class="tier-item locked"><span class="tier-check">—</span>FCS Architecture (Sigma only)</div>
+        </div>
+        <div class="tier-foot">
+          <button class="tier-btn tier-btn-gold" onclick="openModal('delta')">▸ Buy DELTA — $349</button>
+          <div class="tier-savings">★ Most popular — saves $248 vs Alpha+Beta+Delta</div>
+        </div>
+      </div>
+
+      <!-- SIGMA -->
+      <div class="tier-card">
+        <div class="tier-glow-line"></div>
+        <div class="tier-head">
+          <span class="tier-badge">TIER 04 · SIGMA</span>
+          <div class="tier-name">SIGMA</div>
+          <div class="tier-tagline">Complete engineering package — defence prime / OEM grade</div>
+        </div>
+        <div class="tier-price">
+          <div class="price-amount"><span class="price-currency">$</span>699</div>
+          <div class="price-per">USD · ONE-TIME · INSTANT DELIVERY</div>
+        </div>
+        <div class="tier-items">
+          <div class="tier-section-label">INCLUDES DELTA PLUS</div>
+          <div class="tier-item"><span class="tier-check">✓</span>All ALPHA + BETA + DELTA</div>
+          <div class="tier-section-label">FLIGHT CONTROL SYSTEM</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Centre of Gravity (CG) Range</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Tail Volume Coefficient (Vh, Vv)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Static Margin Analysis</div>
+          <div class="tier-item"><span class="tier-check">✓</span>PID Tuning Parameters (Kp, Ki, Kd)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Control Loop Architecture</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Redundancy Logic Design</div>
+          <div class="tier-section-label">EXCLUSIVES</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Full BOM (both platforms, DOCX)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Priority email Q&amp;A (14 days)</div>
+          <div class="tier-item"><span class="tier-check">✓</span>Commercial use licence</div>
+        </div>
+        <div class="tier-foot">
+          <button class="tier-btn tier-btn-outline" onclick="openModal('sigma')">▸ Buy SIGMA — $699</button>
+          <div class="tier-savings">✦ Full package — best value for OEMs</div>
+        </div>
+      </div>
+
+    </div><!-- tiers-grid -->
+
+    <!-- Compare note -->
+    <div style="margin-top:32px;padding:20px 28px;background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--gold);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:3px;margin-bottom:4px;">◈ ALL TIERS INCLUDE</div>
+        <div style="font-size:13px;color:var(--silver);">Coverage of both UAV-LRS-2000 (Turboprop) &amp; UAV-PSH-001 (Pusher/Inverted-V) platforms &nbsp;·&nbsp; PDF + DOCX format &nbsp;·&nbsp; Instant digital delivery via Stripe</div>
+      </div>
+      <a href="#content" style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold);text-decoration:none;white-space:nowrap;border:1px solid var(--border);padding:10px 18px;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">FULL CONTENTS ↓</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ CONTENT DETAIL ══════════════════════ -->
+<div class="section content-section" id="content">
+  <div class="container">
+    <div class="s-label">WHAT YOU GET</div>
+    <h2 class="s-title">Technical <span class="hi">Content</span> Breakdown</h2>
+    <p class="s-sub">Every parameter explained. Understand exactly what data you receive at each tier before you buy.</p>
+    <div class="content-grid reveal">
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 01</div>
+        <div class="cm-title">Wing Loading Analysis</div>
+        <span class="cm-tier alpha">ALPHA · TIER 1+</span>
+        <ul class="cm-params"><li>W/S (kg/m²)</li><li>span loading</li><li>stall speed</li><li>manoeuvre envelope</li></ul>
+        <div class="cm-desc">Wing loading W/S determines stall speed, cruise efficiency, and gust response. Both platforms compared. Includes V-n diagram and operating envelope boundary.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 02</div>
+        <div class="cm-title">Lift Curve (CL vs α)</div>
+        <span class="cm-tier alpha">ALPHA · TIER 1+</span>
+        <ul class="cm-params"><li>CL max</li><li>α stall</li><li>dCL/dα</li><li>zero-lift α</li></ul>
+        <div class="cm-desc">Tabulated and plotted lift curve for the primary aerofoil section. Includes clean and flaps-extended configurations for both UAV platforms.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 03</div>
+        <div class="cm-title">Drag Estimate</div>
+        <span class="cm-tier alpha">ALPHA · TIER 1+</span>
+        <ul class="cm-params"><li>CD0</li><li>induced drag</li><li>interference</li><li>CD total</li></ul>
+        <div class="cm-desc">Component drag build-up using flat-plate skin friction and form factors. Parasite drag breakdown by fuselage, wing, tail, nacelle, and undercarriage.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 04</div>
+        <div class="cm-title">Power Required vs Speed</div>
+        <span class="cm-tier alpha">ALPHA · TIER 1+</span>
+        <ul class="cm-params"><li>P_req (kW)</li><li>V_min power</li><li>V_max range</li><li>endurance speed</li></ul>
+        <div class="cm-desc">Power curves plotted from stall to VNE. Minimum power speed, best-range speed, and best-endurance speed annotated. Covers sea level and cruise altitude.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 05</div>
+        <div class="cm-title">Aerospace Research Paper</div>
+        <span class="cm-tier beta">BETA · TIER 2+</span>
+        <ul class="cm-params"><li>abstract</li><li>methodology</li><li>results</li><li>references</li></ul>
+        <div class="cm-desc">Structured research paper documenting the UAV design rationale, comparative analysis between turboprop and pusher configurations, and key performance projections. IEEE-style formatting.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 06</div>
+        <div class="cm-title">Flight-Validated Design Basis</div>
+        <span class="cm-tier beta">BETA · TIER 2+</span>
+        <ul class="cm-params"><li>design point</li><li>payload fractions</li><li>fuel fractions</li><li>Breguet range</li></ul>
+        <div class="cm-desc">Mission segment fuel fractions using Breguet range equation. Payload-range trade study. Weight build-up with validated fractions benchmarked against comparable MALE-class platforms.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 07</div>
+        <div class="cm-title">Prototype Specification</div>
+        <span class="cm-tier beta">BETA · TIER 2+</span>
+        <ul class="cm-params"><li>materials</li><li>dimensions</li><li>systems list</li><li>weight budget</li></ul>
+        <div class="cm-desc">Complete prototype specification sheet for both UAV-LRS-2000 and UAV-PSH-001 including airframe materials, structural sections, systems list, and full weight budget table.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 08</div>
+        <div class="cm-title">Lift Coefficient Dataset</div>
+        <span class="cm-tier delta">DELTA · TIER 3+</span>
+        <ul class="cm-params"><li>CL_cruise</li><li>CL_max</li><li>CL_to</li><li>CL_land</li></ul>
+        <div class="cm-desc">Full lift coefficient table across angle of attack from −4° to stall. Cruise CL, take-off CL, landing CL and their corresponding Mach/speed conditions. High-lift device effect.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 09</div>
+        <div class="cm-title">Drag Polar</div>
+        <span class="cm-tier delta">DELTA · TIER 3+</span>
+        <ul class="cm-params"><li>CD vs CL²</li><li>Oswald factor</li><li>L/D max</li><li>polar intercept</li></ul>
+        <div class="cm-desc">Full drag polar CD = CD0 + CL²/(π·AR·e) plotted with Oswald efficiency factor. L/D max and the corresponding flight condition. Flaps-up and flaps-down polars.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 10</div>
+        <div class="cm-title">Reynolds Number Analysis</div>
+        <span class="cm-tier delta">DELTA · TIER 3+</span>
+        <ul class="cm-params"><li>Re_cruise</li><li>Re_stall</li><li>aerofoil regime</li><li>transition point</li></ul>
+        <div class="cm-desc">Chord Reynolds numbers at cruise, stall, and climb conditions. Laminar-turbulent transition analysis. Aerofoil selection validation — confirms low-Re regime suitability for MALE-class operation.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 11</div>
+        <div class="cm-title">Propulsive Efficiency</div>
+        <span class="cm-tier delta">DELTA · TIER 3+</span>
+        <ul class="cm-params"><li>η_prop</li><li>η_thermal</li><li>η_overall</li><li>thrust curve</li></ul>
+        <div class="cm-desc">Propulsive efficiency η_prop vs flight speed. Pusher vs tractor comparison. Thermal efficiency of Rotax 915 iS and TPE331-10. Overall efficiency chain. Thrust available curve vs speed.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 12</div>
+        <div class="cm-title">Cruise Speed &amp; Fuel Burn</div>
+        <span class="cm-tier delta">DELTA · TIER 3+</span>
+        <ul class="cm-params"><li>V_cruise</li><li>SFC</li><li>fuel/km</li><li>endurance</li></ul>
+        <div class="cm-desc">Cruise speed optimisation at target altitude. Specific fuel consumption (SFC) for each engine option. Fuel burn per km and per hour at cruise and loiter conditions. Range sensitivity.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 13</div>
+        <div class="cm-title">Centre of Gravity Range</div>
+        <span class="cm-tier sigma">SIGMA · TIER 4</span>
+        <ul class="cm-params"><li>CG_fwd</li><li>CG_aft</li><li>%MAC</li><li>loading chart</li></ul>
+        <div class="cm-desc">Forward and aft CG limits as % MAC. CG excursion during fuel burn and payload loading. CG loading chart for mission planning. Lateral CG balance for both platform configurations.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 14</div>
+        <div class="cm-title">Tail Volume Coefficient</div>
+        <span class="cm-tier sigma">SIGMA · TIER 4</span>
+        <ul class="cm-params"><li>Vh (H-tail)</li><li>Vv (V-tail)</li><li>ruddevator</li><li>moment arm</li></ul>
+        <div class="cm-desc">Horizontal and vertical tail volume coefficients. Conventional tail (UAV-LRS-2000) vs inverted-V ruddevator (UAV-PSH-001) comparative analysis. Sizing methodology and accepted ranges.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 15</div>
+        <div class="cm-title">Static Margin</div>
+        <span class="cm-tier sigma">SIGMA · TIER 4</span>
+        <ul class="cm-params"><li>NP location</li><li>SM (%MAC)</li><li>pitch stiffness</li><li>stability grade</div>
+        <div class="cm-desc">Neutral point estimation using aerodynamic centre contributions. Static margin as % MAC for both platforms. Stability gradient Cmα. Acceptable static margin bands for UAV autopilot operation.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 16</div>
+        <div class="cm-title">PID Tuning Parameters</div>
+        <span class="cm-tier sigma">SIGMA · TIER 4</span>
+        <ul class="cm-params"><li>Kp / Ki / Kd</li><li>roll loop</li><li>pitch loop</li><li>yaw loop</li></ul>
+        <div class="cm-desc">Initial PID gain estimates for roll, pitch, and yaw loops based on aircraft dynamics. Inner-outer loop structure. Gain scheduling approach for altitude. Starting values for HIL/SIL simulation.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 17</div>
+        <div class="cm-title">Control Loop Architecture</div>
+        <span class="cm-tier sigma">SIGMA · TIER 4</span>
+        <ul class="cm-params"><li>inner loop</li><li>outer loop</li><li>state machine</li><li>modes</li></ul>
+        <div class="cm-desc">Full flight control system block diagram. Inner attitude loop, outer navigation loop, altitude and airspeed hold. Auto-takeoff, waypoint following, loiter, return-to-base, emergency modes.</div>
+      </div>
+
+      <div class="content-module">
+        <div class="cm-num">MODULE 18</div>
+        <div class="cm-title">Redundancy Logic</div>
+        <span class="cm-tier sigma">SIGMA · TIER 4</span>
+        <ul class="cm-params"><li>dual FCC</li><li>sensor voting</li><li>failsafe tree</li><li>watchdog</li></ul>
+        <div class="cm-desc">Dual-channel FCC crosscheck logic. Sensor voting (3-out-of-3, 2-out-of-3). Failure detection and isolation (FDI) architecture. Failsafe decision tree: RTB, loiter, controlled descent. Watchdog timer logic.</div>
+      </div>
+
+    </div><!-- content-grid -->
+  </div>
+</div>
+
+<!-- SAMPLE DATA PREVIEW -->
+<div class="section sample-section" id="sample">
+  <div class="container">
+    <div class="s-label">SAMPLE DATA</div>
+    <h2 class="s-title">Preview: What the <span class="hi">Data Looks Like</span></h2>
+    <p class="s-sub">Actual structure of documents you receive. Values shown are illustrative — purchased documents contain full validated datasets.</p>
+    <div class="sample-grid reveal">
+
+      <!-- Sample 1: Aero Data -->
+      <div class="sample-card">
+        <div class="sample-head">
+          <div class="sample-head-dot" style="background:#00e87a;"></div>
+          <div class="sample-head-dot" style="background:#f0b020;"></div>
+          <div class="sample-head-dot" style="background:#ff3a5c;"></div>
+          <span class="sample-filename" style="margin-left:8px;">UAV_PSH001_AeroData.json</span>
+        </div>
+        <div class="sample-body">
+<span class="token-com">// UAV-PSH-001 Pusher · ALPHA tier data</span><br>
+{<br>
+&nbsp;&nbsp;<span class="token-key">"platform"</span>: <span class="token-val">"UAV-PSH-001"</span>,<br>
+&nbsp;&nbsp;<span class="token-key">"wing_area_m2"</span>: <span class="token-val">12.4</span>,<br>
+&nbsp;&nbsp;<span class="token-key">"wingspan_m"</span>: <span class="token-val">18.0</span>,<br>
+&nbsp;&nbsp;<span class="token-key">"aspect_ratio"</span>: <span class="token-val">26.1</span>,<br>
+&nbsp;&nbsp;<span class="token-key">"MTOW_kg"</span>: <span class="token-val">750</span>,<br>
+&nbsp;&nbsp;<span class="token-key">"wing_loading"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="token-key">"WS_kg_m2"</span>: <span class="token-val">60.5</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="token-key">"stall_speed_ms"</span>: <span class="token-val">22.8</span><br>
+&nbsp;&nbsp;},<br>
+&nbsp;&nbsp;<span class="token-key">"CL_max_clean"</span>: <span class="token-val">1.42</span>,<br>
+&nbsp;&nbsp;<span class="token-key">"CD0"</span>: <span class="token-val">0.024</span>,<br>
+&nbsp;&nbsp;<span class="token-key">"L_D_max"</span>: <span class="token-val">██.█</span> <span class="token-com">// Delta+</span><br>
+}
+        </div>
+        <div class="sample-locked">
+          <p>FULL DATASET — ALPHA TIER ($49)</p>
+          <button onclick="openModal('alpha')" class="tier-btn tier-btn-outline" style="font-size:9px;padding:9px 20px;border:1px solid var(--border);cursor:pointer;">Unlock ALPHA →</button>
+        </div>
+      </div>
+
+      <!-- Sample 2: Drag Polar -->
+      <div class="sample-card">
+        <div class="sample-head">
+          <div class="sample-head-dot" style="background:#00e87a;"></div>
+          <div class="sample-head-dot" style="background:#f0b020;"></div>
+          <div class="sample-head-dot" style="background:#ff3a5c;"></div>
+          <span class="sample-filename" style="margin-left:8px;">DragPolar_LRS2000.csv</span>
+        </div>
+        <div class="sample-body">
+<span class="token-com"># UAV-LRS-2000 Drag Polar · DELTA tier</span><br>
+<span class="token-key">alpha_deg</span>, <span class="token-key">CL</span>, <span class="token-key">CD</span>, <span class="token-key">L_D</span><br>
+<span class="token-val">-4.0</span>, <span class="token-val">0.12</span>, <span class="token-val">0.0245</span>, <span class="token-val">4.9</span><br>
+<span class="token-val">0.0</span>, <span class="token-val">0.38</span>, <span class="token-val">0.0248</span>, <span class="token-val">15.3</span><br>
+<span class="token-val">2.0</span>, <span class="token-val">0.55</span>, <span class="token-val">0.0257</span>, <span class="token-val">21.4</span><br>
+<span class="token-val">4.0</span>, <span class="token-val">0.72</span>, <span class="token-val">0.0275</span>, <span class="token-val">26.2</span><br>
+<span class="token-val">6.0</span>, <span class="token-val">0.89</span>, <span class="token-val">0.0303</span>, <span class="token-unit">██.█</span> <span class="token-com">// Delta+</span><br>
+<span class="token-val">8.0</span>, <span class="token-unit">████</span>, <span class="token-unit">██████</span>, <span class="token-unit">████</span><br>
+<span class="token-com">... full table in purchased document</span>
+        </div>
+        <div class="sample-locked">
+          <p>FULL POLAR TABLE — DELTA TIER ($349)</p>
+          <button onclick="openModal('delta')" class="tier-btn tier-btn-gold" style="font-size:9px;padding:9px 20px;cursor:pointer;">Unlock DELTA →</button>
+        </div>
+      </div>
+
+      <!-- Sample 3: FCS -->
+      <div class="sample-card">
+        <div class="sample-head">
+          <div class="sample-head-dot" style="background:#00e87a;"></div>
+          <div class="sample-head-dot" style="background:#f0b020;"></div>
+          <div class="sample-head-dot" style="background:#ff3a5c;"></div>
+          <span class="sample-filename" style="margin-left:8px;">FCS_PID_Parameters.txt</span>
+        </div>
+        <div class="sample-body">
+<span class="token-com">// FCS Architecture · SIGMA tier</span><br>
+<span class="token-com">// UAV-PSH-001 Pusher Config</span><br>
+<br>
+<span class="token-key">ROLL_LOOP</span>:<br>
+&nbsp;&nbsp;Kp = <span class="token-unit">█.██</span> <span class="token-com">// Sigma only</span><br>
+&nbsp;&nbsp;Ki = <span class="token-unit">█.███</span><br>
+&nbsp;&nbsp;Kd = <span class="token-unit">█.████</span><br>
+<br>
+<span class="token-key">PITCH_LOOP</span>:<br>
+&nbsp;&nbsp;Kp = <span class="token-unit">█.██</span><br>
+&nbsp;&nbsp;Ki = <span class="token-unit">█.███</span><br>
+&nbsp;&nbsp;Kd = <span class="token-unit">█.████</span><br>
+<br>
+<span class="token-key">STATIC_MARGIN</span>:<br>
+&nbsp;&nbsp;SM_%MAC = <span class="token-unit">██.█%</span><br>
+&nbsp;&nbsp;CG_fwd = <span class="token-unit">██.█% MAC</span><br>
+&nbsp;&nbsp;CG_aft = <span class="token-unit">██.█% MAC</span>
+        </div>
+        <div class="sample-locked">
+          <p>FULL FCS DATA — SIGMA TIER ($699)</p>
+          <button onclick="openModal('sigma')" class="tier-btn tier-btn-outline" style="font-size:9px;padding:9px 20px;border:1px solid var(--border);cursor:pointer;">Unlock SIGMA →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- PROCESS -->
+<div class="section process-section" id="process">
+  <div class="container">
+    <div class="s-label">HOW IT WORKS</div>
+    <h2 class="s-title">From Click to <span class="hi">Documents</span></h2>
+    <p class="s-sub">Four steps. Under 5 minutes from purchase to receipt.</p>
+    <div class="process-steps reveal">
+      <div class="ps">
+        <div class="ps-num">01</div>
+        <div class="ps-title">Choose Tier</div>
+        <div class="ps-desc">Select ALPHA, BETA, DELTA, or SIGMA based on your project needs. Hover each card to see full contents.</div>
+      </div>
+      <div class="ps">
+        <div class="ps-num">02</div>
+        <div class="ps-title">Stripe Checkout</div>
+        <div class="ps-desc">Secure payment via Stripe. Accepts Visa, Mastercard, AMEX, Apple Pay, Google Pay. 256-bit SSL encryption.</div>
+      </div>
+      <div class="ps">
+        <div class="ps-num">03</div>
+        <div class="ps-title">Instant Delivery</div>
+        <div class="ps-desc">Download link emailed immediately after payment confirmation. PDF + DOCX formats. No waiting, no manual fulfilment.</div>
+      </div>
+      <div class="ps">
+        <div class="ps-num">04</div>
+        <div class="ps-title">Use the Data</div>
+        <div class="ps-desc">Apply to your UAV project, research paper, defence proposal, or engineering thesis. SIGMA includes commercial use licence.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="section faq-section" id="faq">
+  <div class="container" style="max-width:760px;">
+    <div class="s-label">FAQ</div>
+    <h2 class="s-title">Common <span class="hi">Questions</span></h2>
+    <p class="s-sub">Everything you need to know before purchasing.</p>
+
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">Are these real engineering documents?<span class="arrow">+</span></button>
+      <div class="faq-a">Yes. EGK Aerodynamic Division has produced these documents as part of the UAV-LRS-2000 and UAV-PSH-001 concept design programme. The data is based on established aerodynamic methods (Breguet, Raymer, Anderson) validated against comparable MALE-class platforms such as Bayraktar TB2 and IAI Heron.</div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">Which platforms are covered?<span class="arrow">+</span></button>
+      <div class="faq-a">Both UAV platforms are included in all tiers: UAV-LRS-2000 (conventional turboprop, dorsal engine, conventional tail — ~20m span, 1,500 kg MTOW) and UAV-PSH-001 (rear pusher, inverted-V tail, Rotax 915 iS — ~18m span, 750 kg MTOW). Side-by-side comparisons are included throughout.</div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">Can I upgrade my tier later?<span class="arrow">+</span></button>
+      <div class="faq-a">Yes. Email sales@egkhor.com.my with your Stripe receipt and the tier you wish to upgrade to. We will send a Stripe payment link for the difference in price. You will receive only the additional documents — no need to re-purchase what you already have.</div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">What format are the documents?<span class="arrow">+</span></button>
+      <div class="faq-a">All documents are delivered as PDF (formatted, print-ready) and DOCX (editable, for research and proposal work). Data tables are also included as CSV or JSON where applicable. Technical drawings are delivered as interactive HTML files.</div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">Is there a refund policy?<span class="arrow">+</span></button>
+      <div class="faq-a">Due to the digital nature of the documents, we do not offer refunds after download. If you experience a technical issue receiving your documents, contact sales@egkhor.com.my within 48 hours of purchase and we will resolve it immediately.</div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">Can I use the data for commercial projects?<span class="arrow">+</span></button>
+      <div class="faq-a">ALPHA, BETA, and DELTA tiers are licensed for personal and research use. SIGMA includes a commercial use licence — you may use the data in proposals, product development, and client deliverables. Resale or redistribution of the documents themselves is prohibited under all tiers.</div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-q" onclick="toggleFaq(this)">Is the Stripe payment secure?<span class="arrow">+</span></button>
+      <div class="faq-a">Yes. Stripe is PCI DSS Level 1 certified — the highest level of payment security. EGK never sees or stores your card details. Stripe processes payments in 135+ currencies. The checkout page is fully encrypted with TLS 1.3.</div>
+    </div>
+  </div>
+</div>
+
+<!-- FINAL CTA BANNER -->
+<div style="background:linear-gradient(135deg,#0a1420,#040a14);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:80px 48px;text-align:center;">
+  <div class="container">
+    <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--gold);margin-bottom:16px;">◈ EGK AERODYNAMIC DIVISION · UAV TECHNICAL DOCUMENTS</div>
+    <h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(28px,4vw,52px);color:#fff;margin-bottom:12px;line-height:1.1;">Start with <span style="color:var(--gold);">$49</span>.<br>Scale to the full package.</h2>
+    <p style="font-size:16px;color:var(--silver);margin-bottom:36px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.7;">From preliminary aero analysis to complete FCS architecture — the only source for Malaysia-engineered 2000 km UAV engineering data.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="#pricing" class="cta-primary">▸ Buy Now — From $49</a>
+      <a href="https://egkhor.com.my" target="_blank" class="cta-ghost">Visit EGK Official Site</a>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">
+        <img src="https://egkhor.com.my/home/wp-content/uploads/2026/02/cropped-IMG_7598.png" alt="EGK" onerror="this.style.display='none'">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;color:#fff;">EGK AERODYNAMIC DIVISION</div>
+          <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--gold);letter-spacing:2px;margin-top:2px;">EGK MICROELECTRONICS SOLUTIONS GROUP SDN. BHD.</div>
+        </div>
+      </div>
+      <p class="footer-desc">Dedicated sales portal for EGK UAV engineering documents. Two platforms: UAV-LRS-2000 (Turboprop) and UAV-PSH-001 (Pusher/Inverted-V). Concept Design Rev A — March 2026.</p>
+    </div>
+    <div class="footer-col">
+      <h4>DOCUMENTS</h4>
+      <a href="#pricing">ALPHA — $49</a>
+      <a href="#pricing">BETA — $149</a>
+      <a href="#pricing">DELTA — $349</a>
+      <a href="#pricing">SIGMA — $699</a>
+    </div>
+    <div class="footer-col">
+      <h4>LINKS</h4>
+      <a href="https://egkhor.com.my" target="_blank">EGK Official Site</a>
+      <a href="mailto:sales@egkhor.com.my">sales@egkhor.com.my</a>
+      <a href="tel:+60445059700">+604-505-9700</a>
+      <p>PO Box 4, Bukit Mertajam</p>
+      <p>Penang, Malaysia</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2026 EGK MICROELECTRONICS SOLUTIONS GROUP SDN. BHD. · 202501002992 · ALL RIGHTS RESERVED</div>
+    <div class="footer-stripe">PAYMENTS BY <span class="stripe-badge">STRIPE</span> · SECURE CHECKOUT · SSL ENCRYPTED</div>
+  </div>
+</footer>
+
+<!-- ══ PURCHASE MODALS ══ -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalTitle">Purchase Documents</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalTierBadge" class="modal-tier-badge">TIER 01 · ALPHA</div>
+      <div id="modalPrice" class="modal-price">$49</div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:1px;margin-bottom:4px;">USD · ONE-TIME · INSTANT DIGITAL DELIVERY</div>
+      <ul id="modalIncludes" class="modal-includes"></ul>
+      <a id="stripeLink" href="#" target="_blank" class="stripe-btn stripe-btn-main">▸ PROCEED TO SECURE CHECKOUT</a>
+      <div class="modal-note">Powered by Stripe · PCI DSS Level 1 · 256-bit SSL<br>After payment, your documents are emailed automatically.<br>Questions? Email sales@egkhor.com.my</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Tier data (replace Stripe links with real ones when live) ──
+const TIERS = {
+  alpha: {
+    badge:'TIER 01 · ALPHA',
+    name:'ALPHA Package',
+    price:'$49',
+    stripe:'https://buy.stripe.com/REPLACE_ALPHA_LINK', // ← Replace with real Stripe payment link
+    includes:[
+      'Wing Loading Analysis (W/S, stall speed, V-n diagram)',
+      'Lift Curve — CL vs α, CLmax, stall α (both platforms)',
+      'Drag Estimate — CD0, induced drag, component build-up',
+      'Power Required vs Speed (sea level + cruise altitude)',
+      'PDF + DOCX deliverables · Both UAV platforms',
+      'Summary data tables'
+    ]
+  },
+  beta: {
+    badge:'TIER 02 · BETA',
+    name:'BETA Package',
+    price:'$149',
+    stripe:'https://buy.stripe.com/REPLACE_BETA_LINK', // ← Replace with real Stripe payment link
+    includes:[
+      'All ALPHA deliverables included',
+      'Aerospace Research Paper (IEEE-style, both platforms)',
+      'Flight-Validated Design Basis (Breguet, fuel fractions)',
+      'Prototype Specification Sheet (materials, weight budget)',
+      'Reference drawings for UAV-LRS-2000 + UAV-PSH-001',
+      'PDF + DOCX + interactive HTML drawings'
+    ]
+  },
+  delta: {
+    badge:'TIER 03 · DELTA ★ MOST POPULAR',
+    name:'DELTA Package',
+    price:'$349',
+    stripe:'https://buy.stripe.com/REPLACE_DELTA_LINK', // ← Replace with real Stripe payment link
+    includes:[
+      'All ALPHA + BETA deliverables included',
+      'Lift Coefficient (CL) dataset — full α sweep',
+      'Drag Polar (CD vs CL², Oswald factor, L/D max)',
+      'Reynolds Number Analysis (cruise, stall, climb)',
+      'Propulsive Efficiency η — pusher vs tractor comparison',
+      'Cruise Speed Optimisation + Fuel Burn Rate (km + hr)',
+      'Wing Loading refined dataset',
+      'CSV/JSON data tables for direct simulation import'
+    ]
+  },
+  sigma: {
+    badge:'TIER 04 · SIGMA — FULL PACKAGE',
+    name:'SIGMA Package',
+    price:'$699',
+    stripe:'https://buy.stripe.com/REPLACE_SIGMA_LINK', // ← Replace with real Stripe payment link
+    includes:[
+      'All ALPHA + BETA + DELTA deliverables included',
+      'Centre of Gravity Range (CG_fwd, CG_aft, %MAC, loading chart)',
+      'Tail Volume Coefficients (Vh, Vv, ruddevator sizing)',
+      'Static Margin Analysis (NP, SM %MAC, Cmα)',
+      'PID Tuning Parameters (Kp, Ki, Kd — roll, pitch, yaw)',
+      'Control Loop Architecture (inner/outer, modes, state machine)',
+      'Redundancy Logic Design (FDI, sensor voting, failsafe tree)',
+      'Full BOM both platforms (DOCX)',
+      '14-day priority email Q&A with EGK Aero team',
+      'Commercial use licence'
+    ]
+  }
+};
+
+function openModal(tier) {
+  const t = TIERS[tier];
+  document.getElementById('modalTitle').textContent = t.name;
+  document.getElementById('modalTierBadge').textContent = t.badge;
+  document.getElementById('modalPrice').textContent = t.price;
+  document.getElementById('stripeLink').href = t.stripe;
+  const ul = document.getElementById('modalIncludes');
+  ul.innerHTML = t.includes.map(i => `<li>${i}</li>`).join('');
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+
+// FAQ toggle
+function toggleFaq(btn) {
+  const a = btn.nextElementSibling;
+  const isOpen = a.classList.contains('open');
+  document.querySelectorAll('.faq-a').forEach(el=>el.classList.remove('open'));
+  document.querySelectorAll('.faq-q').forEach(el=>el.classList.remove('open'));
+  if(!isOpen){ a.classList.add('open'); btn.classList.add('open'); }
+}
+
+// Scroll reveal
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold:0.08});
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Stripe note for demo links
+document.getElementById('stripeLink').addEventListener('click', function(e){
+  if(this.href.includes('REPLACE')){ e.preventDefault();
+    alert('⚡ Stripe link not yet configured.\n\nTo activate: Replace the REPLACE_XXXX_LINK placeholders in the JavaScript with your real Stripe Payment Links.\n\nCreate at: dashboard.stripe.com → Payment Links'); }
+});
+</script>
+</body>
+</html>
